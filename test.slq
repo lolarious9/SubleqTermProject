@@ -1,0 +1,15 @@
+@add
+;r 82
+;m 2
+
+
+#test{
+    slq r -1
+    add r m
+    slq r -1
+    slq 0 0 -1
+}
+
+
+
+
