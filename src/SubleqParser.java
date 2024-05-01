@@ -12,6 +12,8 @@ import java.io.FileNotFoundException;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Time;
+import java.time.Duration;
 
 public class SubleqParser {
 
@@ -31,7 +33,11 @@ public class SubleqParser {
                 sz = 1;
             } else {
                 for (char v : str.toCharArray()) {
-                    vals.add(Character.getNumericValue(v));
+                    int charInt = Character.getNumericValue(v);
+                    if (charInt == -1) {
+                        charInt = (int) v;
+                    }
+                    vals.add(charInt);
                 }
                 this.type = 1;
                 sz = vals.size();
@@ -49,7 +55,12 @@ public class SubleqParser {
         }
 
         public Integer getIndex() {
+            // int
             if (type == 0) {
+                return it;
+            }
+            // char
+            if (key.length() == 1) {
                 return it;
             }
             if (it - start > sz) {
@@ -84,12 +95,10 @@ public class SubleqParser {
             return paramCount;
         }
 
-        Macro(String fileIn) {
+        Macro(String fileIn, SubleqParser p) {
             super();
 
-            if (!fileIn.endsWith(".slq")) {
-                fileIn = fileIn.concat(".slq");
-            }
+            fileIn = toSLQ(fileIn);
             try (Scanner s = new Scanner(new File(fileIn))) {
 
                 while (s.hasNextLine()) {
@@ -101,6 +110,8 @@ public class SubleqParser {
 
                 s.close();
 
+                p.mergeVars(super.getVars());
+                super.vars = (p.getVars());
                 // populate parameters
                 Matcher m = COMMAND_PATTERN.matcher(super.header);
 
@@ -151,8 +162,8 @@ public class SubleqParser {
                     return st;
                 }
             }
-            if (str.equals("z")) {
-                return "0";
+            if (super.vars.containsKey(str)) {
+                str = Integer.toString(super.vars.get(str).getIndex());
             }
 
             return str;
@@ -193,7 +204,7 @@ public class SubleqParser {
             .compile(
                     "((?<command>#?[a-zA-Z]+)(?:\\s+)(?<lop>[-\\w]+)(?:$|\\s+(?<rop>[-\\w]+)|\\s+\\{$)(?:$|\\s+(?<third>[-\\w]+)|(?:\\s+\\{$|$)))");
     private static final Pattern Variable = Pattern
-            .compile(";([a-zA-Z_]+)\\s(?:(?<num>[-+]?\\d+)|(?:\\\"(?<str>[a-zA-Z]+)\\\"))$");
+            .compile(";([a-zA-Z_]+)\\s(?:(?<num>[-+]?\\d+)|(?:\\\"(?<str>[\\w]+|[\\S]{1})\\\"))$");
 
     private void init() {
         this.header = new String();
@@ -209,35 +220,16 @@ public class SubleqParser {
         init();
     }
 
-    // parses given filename
-    SubleqParser(String fileIn, String fileOut) {
-        init();
-
-        if (!fileIn.endsWith(".slq")) {
-            fileIn = fileIn.concat(".slq");
-        }
-        try (Scanner s = new Scanner(new File(fileIn))) {
-            SubleqParser parser = new SubleqParser();
-
-            while (s.hasNextLine()) {
-                String tmp = s.nextLine();
-                if (!parser.add(tmp)) {
-                    throw new Exception("Something went wrong parsing the file." + fileIn);
-                }
-            }
-            System.out.println(parser);
-            s.close();
-            parser.build(fileOut);
-        } catch (FileNotFoundException e) {
-            System.out.println(e);
-            System.exit(-1);
-        } catch (Exception E) {
-            System.out.println(E);
-        }
-    }
-
     public boolean isEmpty() {
         return commands.isEmpty();
+    }
+
+    private Hashtable<String, Variable> getVars() {
+        return vars;
+    }
+
+    private void mergeVars(Hashtable<String, Variable> h) {
+        this.vars.putAll(h);
     }
 
     public ArrayList<String> nextLineList() {
@@ -274,6 +266,7 @@ public class SubleqParser {
         if (len == 2) {
             line += pc + 3;
         }
+
         fw.write(line);
         fw.write('\n');
     }
@@ -281,7 +274,8 @@ public class SubleqParser {
     private int buildVars(int pc, FileWriter fw) throws IOException {
         if (pc == 0) {
             fw.write(";z 0\n");
-            return buildVars(1, fw);
+            pc = 1;
+            return buildVars(pc, fw);
 
         }
         for (Variable v : vars.values()) {
@@ -326,7 +320,7 @@ public class SubleqParser {
 
         try (FileWriter fw = new FileWriter(new File(tmp))) {
             int pc = 0;
-            buildVars(pc, fw);
+            pc = buildVars(pc, fw);
 
             fw.write("{\n");
 
@@ -371,9 +365,9 @@ public class SubleqParser {
         s = s.trim();
         Matcher m = INCLUDABLE.matcher(s);
 
-        // Handle includes
+        // Handle Macros
         if (m.matches()) {
-            macros.putIfAbsent(m.group("command"), new Macro(m.group("command")));
+            macros.putIfAbsent(m.group("command"), new Macro(m.group("command"), this));
             return true;
         }
         m = Variable.matcher(s);
@@ -408,5 +402,66 @@ public class SubleqParser {
         }
 
         return true;
+    }
+
+    private static String toSLQ(String fileIn) {
+
+        if (!fileIn.endsWith(".slq")) {
+            fileIn = fileIn.concat(".slq");
+        }
+        return fileIn;
+    }
+
+    public static void main(String[] args) {
+        SubleqParser parser = new SubleqParser();
+        File fileIn;
+        String fileName = "";
+
+        if (args.length > 0) {
+
+            fileName = toSLQ(args[0]);
+            fileIn = new File(fileName);
+
+        } else {
+            System.out.println("Please input a File to parse: ");
+            try (Scanner s = new Scanner(System.in)) {
+                if (s.hasNextLine()) {
+                    fileName = toSLQ(s.nextLine());
+
+                    fileIn = new File(fileName);
+
+                } else {
+                    throw new FileNotFoundException();
+                }
+
+            } catch (Exception e) {
+                fileIn = null;
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+        long t = System.currentTimeMillis();
+        if (fileIn != null && fileIn.exists()) {
+
+            try (Scanner s = new Scanner(fileIn)) {
+
+                while (s.hasNextLine()) {
+                    String tmp = s.nextLine();
+                    if (tmp != "" && !parser.add(tmp)) {
+                        System.out.println(tmp + " failed to parse ");
+                    }
+                }
+
+                parser.build(fileName.substring(0, fileName.length() - 4));
+            } catch (Exception e) {
+                System.out.println(e);
+                System.exit(1);
+            }
+        } else {
+            System.out.println("Error no file found!");
+        }
+        t -= System.currentTimeMillis();
+
+        System.out.println("Finished Parsing in " + Duration.ofSeconds(t));
     }
 }

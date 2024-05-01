@@ -124,9 +124,15 @@ int main(int argc, char* argv[]){
         if (argc > 1 ){
             toRun =argv[1];
         }
+        else{
+            std::cout<<"What File?";
+            std::cin >> toRun;
+        }
         
-        
-        s.loadAndRun("/Users/quinnrafferty_1_2/Development/Programming_Languages/TermProject/hello.asq");
+        if(!toRun.ends_with(".asq")){
+            toRun.append(".asq");
+        }
+        s.loadAndRun("/Users/quinnrafferty_1_2/Development/Programming_Languages/SubleqTermProject/"+toRun);
          
         
         return 0;

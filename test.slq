@@ -1,12 +1,42 @@
 @add
-;r 82
-;m 2
 
+@dec
+@inc
 
+;r 78
+;negOne -1
+;two 50
+;minusTwo 2
+;one 1
+;onechar 49
+;plus 43
+;endl 10
+;minus 45
+;equ 61
 #test{
     slq r -1
-    add r m
+    slq plus -1
+    slq two -1
+    slq equ -1
+    add minusTwo r
     slq r -1
+    slq endl -1
+
+    slq r -1
+    slq minus -1
+    slq onechar -1
+    slq equ -1
+    dec r
+    slq r -1
+    slq endl -1
+
+    slq r -1
+    slq plus -1
+    slq onechar -1
+    slq equ -1
+    inc r
+    slq r -1
+    slq endl -1
     slq 0 0 -1
 }
 
