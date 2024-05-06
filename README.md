@@ -9,6 +9,7 @@ else  memory[rop] -= memory[lop];
 * Both the runner and the parser will take either the file name passed via commandline or they will prompt if you forget.
 * Hello.slq is Hello World, and test.slq displays some of the functionality for reference.
 * The parser is in java, and the runner is in C++
+* Headers are required
 
 ### Grammar: 
 
@@ -28,7 +29,10 @@ else  memory[rop] -= memory[lop];
 * Macros use the command regex, so they follow the same rules.
 * @add
 * @print
-* `#add a b {
+* Macros are assumed to be in an .slq file
+* Headers are used to pass variables
+* Macros use the same format as normal code files.
+* Example: `#add a b {
     slq a z
     slq z b
     slq z z
@@ -39,6 +43,7 @@ Please keep the Macros and Variables above the header
 `#main {`
 
 ##### Commands:
+* Header should follow format: #NAME {
 * Uses Java's Regex to lex: 
 `((?<command>#?[a-zA-Z]+)(?:\\s+)(?<lop>[-\\w]+)(?:$|\\s+(?<rop>[-\\w]+)|\\s+\\{$)(?:$|\\s+(?<third>[-\\w]+)|(?:\\s+\\{$|$)))`
 * Command Left-Op Right-Op Third-op
