@@ -23,7 +23,7 @@ else  memory[rop] -= memory[lop];
 * Chars can and should be passed as their integer value directly as well.
 
 
-##### Includes (Marcos)
+##### Includes (macros)
 * Macros are included by using the an ampresand(@)
 `^@(?<command>[a-zA-Z]+)`
 * Macros use the command regex, so they follow the same rules.
